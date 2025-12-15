@@ -1,6 +1,9 @@
-use crate::lake::{droplet::{droplet::Droplet, droplet_dyn::DropletDyn}, LakeAllocatorExt, LakeError, LakeMeta};
-use std::{marker::PhantomData, ptr::NonNull};
 use crate::lake::utils::align_up;
+use crate::lake::{
+    LakeAllocatorExt, LakeError, LakeMeta,
+    droplet::{droplet::Droplet, droplet_dyn::DropletDyn},
+};
+use std::{marker::PhantomData, ptr::NonNull};
 
 /// A view into a section of the lake — a *temporary tributary* or shallow basin
 /// that lives within the larger memory lake but has its own offset and capacity.
@@ -92,7 +95,9 @@ impl<'a, const SIZE: usize> LakeView<'a, SIZE> {
 
         self.offset += len;
 
-        let lake: *mut dyn LakeMeta = self as *mut Self as *mut dyn LakeMeta;
+        let lake = unsafe {
+            core::mem::transmute::<*mut (dyn LakeMeta + '_), *mut (dyn LakeMeta + 'static)>(self)
+        };
 
         Ok(DropletDyn {
             ptr: unsafe { NonNull::new_unchecked(dst) },
