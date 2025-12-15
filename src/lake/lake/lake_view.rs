@@ -92,7 +92,9 @@ impl<'a, const SIZE: usize> LakeView<'a, SIZE> {
 
         self.offset += len;
 
-        let lake: *mut dyn LakeMeta = self as *mut Self as *mut dyn LakeMeta;
+        let lake = unsafe {
+            core::mem::transmute::<*mut (dyn LakeMeta + '_), *mut (dyn LakeMeta + 'static)>(self)
+        };
 
         Ok(DropletDyn {
             ptr: unsafe { NonNull::new_unchecked(dst) },
